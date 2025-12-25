@@ -23,6 +23,8 @@ class ImageController {
       }
 
       // 2. Validate query parameters
+      // console.log("file got", req.file);
+      
       const validation = PromptBuilder.validate(req.query);
       if (!validation.isValid) {
         return res.status(400).json({
@@ -33,7 +35,13 @@ class ImageController {
       }
 
       // 3. Build prompt from query parameters
-      const promptBuilder = new PromptBuilder(req.query);
+      // console.log(req.body);
+      // console.log(req.query);
+      let params;
+      if(Object.keys(req.body).length !== 0 ) params= req.body;
+      if(Object.keys(req.query).length !== 0 ) params= req.query;
+
+      const promptBuilder = new PromptBuilder(params);
       const prompt = promptBuilder.build();
 
       console.log('Generated Prompt:', prompt);
