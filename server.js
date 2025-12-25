@@ -2,13 +2,17 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const cors = require("cors");
+const path = require('path');
+const fs = require('fs');
+
 const imageController = require('./controllers/imageController');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // CORS Configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS || ['http://localhost:5173', 'http://localhost:3000'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS || ['http://localhost:5173', 'http://localhost:3000']; //allowed origins from env
+
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) {
@@ -26,7 +30,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
+app.use(express.static(path.join(__dirname, 'public')));
 // Multer Configuration
 const upload = multer({
   limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
@@ -56,6 +60,55 @@ app.get('/health', (req, res) => {
 });
 
 // Main route - Dental Image Creation
+
+app.get('/', (req, res) => {
+  try {
+    // Read the HTML file from views folder
+    const htmlPath = path.join(__dirname, 'views', 'index.html');
+    
+    fs.readFile(htmlPath, 'utf8', (err, data) => {
+      if (err) {
+        console.error('Error reading HTML file from views folder:', err);
+        
+        // Fallback: Check if file is in root
+        const rootPath = path.join(__dirname, 'index.html');
+        fs.readFile(rootPath, 'utf8', (err2, data2) => {
+          if (err2) {
+            return res.status(500).send(`
+              <html>
+                <body>
+                  <h1>Error Loading Page</h1>
+                  <p>Could not find index.html in views folder or root.</p>
+                  <p>File paths checked:</p>
+                  <ul>
+                    <li>${htmlPath}</li>
+                    <li>${rootPath}</li>
+                  </ul>
+                  <p>Current directory: ${__dirname}</p>
+                </body>
+              </html>
+            `);
+          }
+          
+          // Found in root, send it
+          res.setHeader('Content-Type', 'text/html');
+          res.send(data2);
+        });
+        return;
+      }
+      
+      // Inject API URL dynamically
+      let html = data;
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    });
+  } catch (error) {
+    console.error('Error rendering HTML:', error);
+    res.status(500).send('Server error');
+  }
+});
+
+
 app.post(
   '/create-image', 
   upload.single('image'), 

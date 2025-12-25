@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dental AI Image Modifier</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom styles -->
+    <style>
+        .file-upload-area {
+            border: 3px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area.drag-over {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        .option-card {
+            transition: all 0.2s ease;
+        }
+        
+        .option-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .option-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .loading-spinner {
+            border-top-color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        .result-image {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-tooth text-blue-600 text-2xl"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">Dental AI Modifier</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600 hidden md:inline">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Upload dental images for AI enhancement
+                    </span>
+                    <button id="reset-btn" class="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition">
+                        <i class="fas fa-redo mr-1"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Health Status -->
+        <div id="health-status" class="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg hidden">
+            <div class="flex items-center">
+                <i class="fas fa-server text-blue-500 text-lg mr-3"></i>
+                <div>
+                    <h3 class="font-medium text-blue-800">System Status</h3>
+                    <p class="text-sm text-blue-600">Checking server connection...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Image Upload & Options -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Step 1: Image Upload -->
+                <section class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3">
+                            <span class="font-bold">1</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Upload Dental Image</h2>
+                    </div>
+                    
+                    <div id="file-upload-container" class="mb-6">
+                        <div id="upload-area" 
+                             class="file-upload-area rounded-2xl p-8 text-center cursor-pointer">
+                            <i class="fas fa-cloud-upload-alt text-5xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">
+                                Drop your dental image here
+                            </h3>
+                            <p class="text-gray-500 mb-4">
+                                or click to browse (JPEG, PNG, WebP - max 30MB)
+                            </p>
+                            <label for="image-input" 
+                                   class="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition cursor-pointer">
+                                <i class="fas fa-folder-open mr-2"></i>Select Image
+                            </label>
+                            <input type="file" 
+                                   id="image-input" 
+                                   class="hidden" 
+                                   accept="image/*">
+                        </div>
+                        
+                        <div id="image-preview" class="mt-6 hidden">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-medium text-gray-700">Selected Image</h3>
+                                <button id="remove-image" 
+                                        class="text-red-500 hover:text-red-700">
+                                    <i class="fas fa-times mr-1"></i>Remove
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <img id="preview-img" 
+                                     class="max-h-80 w-auto mx-auto rounded-lg shadow" 
+                                     alt="Preview">
+                                <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                                    <i class="fas fa-image mr-1"></i>
+                                    <span id="image-size">0 MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2: Modification Options -->
+                <section class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3">
+                            <span class="font-bold">2</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Select Modifications</h2>
+                    </div>
+
+                    <!-- Arch & Teeth Selection -->
+                    <div class="mb-8">
+                        <h3 class="font-medium text-gray-700 mb-4 flex items-center">
+                            <i class="fas fa-archway text-blue-500 mr-2"></i>
+                            Target Area & Teeth
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Arch Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">
+                                    Dental Arch
+                                </label>
+                                <div class="flex space-x-2">
+                                    <button data-option="arch" data-value="upper" 
+                                            class="option-card flex-1 p-4 border rounded-lg text-center hover:bg-gray-50">
+                                        <i class="fas fa-arrow-up text-lg mb-2 text-gray-600"></i>
+                                        <p class="font-medium">Upper</p>
+                                        <p class="text-xs text-gray-500 mt-1">Maxillary</p>
+                                    </button>
+                                    <button data-option="arch" data-value="lower" 
+                                            class="option-card flex-1 p-4 border rounded-lg text-center hover:bg-gray-50">
+                                        <i class="fas fa-arrow-down text-lg mb-2 text-gray-600"></i>
+                                        <p class="font-medium">Lower</p>
+                                        <p class="text-xs text-gray-500 mt-1">Mandibular</p>
+                                    </button>
+                                    <button data-option="arch" data-value="both" 
+                                            class="option-card flex-1 p-4 border rounded-lg text-center hover:bg-gray-50">
+                                        <i class="fas fa-exchange-alt text-lg mb-2 text-gray-600"></i>
+                                        <p class="font-medium">Both</p>
+                                        <p class="text-xs text-gray-500 mt-1">Full Smile</p>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Teeth Count -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">
+                                    Number of Teeth
+                                </label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button data-option="teeth_count" data-value="2" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">2</p>
+                                    </button>
+                                    <button data-option="teeth_count" data-value="4" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">4</p>
+                                    </button>
+                                    <button data-option="teeth_count" data-value="6" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">6</p>
+                                    </button>
+                                    <button data-option="teeth_count" data-value="8" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">8</p>
+                                    </button>
+                                    <button data-option="teeth_count" data-value="10" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">10</p>
+                                    </button>
+                                    <button data-option="teeth_count" data-value="full" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">Full Arch</p>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color & Brightness -->
+                    <div class="mb-8">
+                        <h3 class="font-medium text-gray-700 mb-4 flex items-center">
+                            <i class="fas fa-palette text-yellow-500 mr-2"></i>
+                            Color & Brightness
+                        </h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-2">
+                                Teeth Brightening
+                            </label>
+                            <div class="flex space-x-2">
+                                <button data-option="brighten" data-value="subtle" 
+                                        class="option-card flex-1 p-4 border rounded-lg text-center hover:bg-gray-50">
+                                    <i class="fas fa-sun text-lg mb-2 text-yellow-400"></i>
+                                    <p class="font-medium">Subtle</p>
+                                    <p class="text-xs text-gray-500 mt-1">Natural White</p>
+                                </button>
+                                <button data-option="brighten" data-value="natural" 
+                                        class="option-card flex-1 p-4 border rounded-lg text-center hover:bg-gray-50">
+                                    <i class="fas fa-sun text-lg mb-2 text-yellow-500"></i>
+                                    <p class="font-medium">Natural</p>
+                                    <p class="text-xs text-gray-500 mt-1">Healthy White</p>
+                                </button>
+                                <button data-option="brighten" data-value="strong" 
+                                        class="option-card flex-1 p-4 border rounded-lg text-center hover:bg-gray-50">
+                                    <i class="fas fa-sun text-lg mb-2 text-yellow-600"></i>
+                                    <p class="font-medium">Strong</p>
+                                    <p class="text-xs text-gray-500 mt-1">Bright White</p>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Structure & Alignment -->
+                    <div class="mb-8">
+                        <h3 class="font-medium text-gray-700 mb-4 flex items-center">
+                            <i class="fas fa-ruler-combined text-green-500 mr-2"></i>
+                            Structure & Alignment
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Widening -->
+                            <div class="space-y-2">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="widen_upper_teeth" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Widen Upper Teeth</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="widen_lower_teeth" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Widen Lower Teeth</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="close_spaces_evenly" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Close Gaps Evenly</span>
+                                </label>
+                            </div>
+
+                            <!-- Crowding Correction -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">
+                                    Crowding Correction
+                                </label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button data-option="correct_crowding_with_alignment" data-value="mild" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">Mild</p>
+                                        <p class="text-xs text-gray-500">Slight</p>
+                                    </button>
+                                    <button data-option="correct_crowding_with_alignment" data-value="moderate" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">Moderate</p>
+                                        <p class="text-xs text-gray-500">Balanced</p>
+                                    </button>
+                                    <button data-option="correct_crowding_with_alignment" data-value="severe" 
+                                            class="option-card p-3 border rounded-lg text-center hover:bg-gray-50">
+                                        <p class="font-medium">Severe</p>
+                                        <p class="text-xs text-gray-500">Full</p>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-4 flex items-center">
+                            <i class="fas fa-cogs text-purple-500 mr-2"></i>
+                            Advanced Options
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-3">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="replace_missing_teeth" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Replace Missing Teeth</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="reduce_gummy_smile" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Reduce Gummy Smile</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="improve_shape_of_incisal_edges" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Improve Incisor Shape</span>
+                                </label>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="improve_gum_recession" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Improve Gum Recession</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="correct_underbite" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Correct Underbite</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="correct_overbite" class="rounded text-blue-600">
+                                    <span class="text-gray-700">Correct Overbite</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Processing & Results -->
+            <div class="space-y-8">
+                <!-- Step 3: Process & Results -->
+                <section class="bg-white rounded-xl shadow-md p-6 sticky top-8">
+                    <div class="flex items-center mb-6">
+                        <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3">
+                            <span class="font-bold">3</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Generate Result</h2>
+                    </div>
+
+                    <!-- Selected Options Summary -->
+                    <div id="options-summary" class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 class="font-medium text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-list-check mr-2"></i>
+                            Selected Options
+                        </h3>
+                        <div id="summary-content" class="space-y-2">
+                            <p class="text-sm text-gray-500 italic">No options selected yet</p>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button id="generate-btn" 
+                            class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <i class="fas fa-magic mr-2"></i>
+                        Generate Modified Image
+                    </button>
+
+                    <!-- Processing Indicator -->
+                    <div id="processing-indicator" class="mt-6 hidden">
+                        <div class="flex items-center justify-center space-x-3 mb-4">
+                            <div class="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full loading-spinner"></div>
+                            <p class="font-medium text-gray-700">Processing with AI...</p>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progress-bar" class="progress-bar h-2 rounded-full bg-blue-600" style="width: 0%"></div>
+                        </div>
+                        <p id="progress-text" class="text-sm text-gray-500 text-center mt-2">Starting analysis...</p>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="results-section" class="mt-6 hidden">
+                        <h3 class="font-bold text-gray-800 mb-4 text-lg flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            Results
+                        </h3>
+                        
+                        <!-- Modified Image -->
+                        <div class="mb-6">
+                            <h4 class="font-medium text-gray-700 mb-2">Modified Image</h4>
+                            <div class="border rounded-lg overflow-hidden">
+                                <img id="result-image" 
+                                     class="w-full h-64 object-contain bg-gray-100"
+                                     alt="Modified Result">
+                            </div>
+                            <div class="flex justify-between mt-2">
+                                <a id="download-btn" 
+                                   class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                                    <i class="fas fa-download mr-1"></i> Download
+                                </a>
+                                <button id="view-prompt" 
+                                        class="text-gray-600 hover:text-gray-800 text-sm flex items-center">
+                                    <i class="fas fa-code mr-1"></i> View Prompt
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- AI Description -->
+                        <div class="mb-4">
+                            <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                <i class="fas fa-robot text-blue-500 mr-2"></i>
+                                AI Analysis
+                            </h4>
+                            <div id="ai-description" class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                Loading description...
+                            </div>
+                        </div>
+
+                        <!-- Prompt Preview Modal Trigger -->
+                        <button id="view-prompt-btn" 
+                                class="w-full mt-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center justify-center">
+                            <i class="fas fa-eye mr-2"></i>
+                            View Full AI Prompt
+                        </button>
+                    </div>
+
+                    <!-- Error Display -->
+                    <div id="error-display" class="mt-6 hidden">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-center text-red-800 mb-2">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                <h4 class="font-bold">Processing Error</h4>
+                            </div>
+                            <p id="error-message" class="text-red-600 text-sm"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Help & Instructions -->
+                <section class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-question-circle text-blue-500 mr-2"></i>
+                        How to Use
+                    </h3>
+                    <ul class="space-y-3 text-sm text-gray-600">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-0.5 mr-2"></i>
+                            <span>Upload a clear frontal dental photo</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-0.5 mr-2"></i>
+                            <span>Select target arch and number of teeth</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-0.5 mr-2"></i>
+                            <span>Choose desired modifications</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-0.5 mr-2"></i>
+                            <span>Click "Generate" and wait for AI processing</span>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Prompt Modal -->
+    <div id="prompt-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-code mr-2"></i>
+                    AI Prompt Used
+                </h3>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-600 text-2xl">
+                    &times;
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="mb-4">
+                    <h4 class="font-medium text-gray-700 mb-2">Generated Prompt:</h4>
+                    <pre id="full-prompt" class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"></pre>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">API Response:</h4>
+                    <pre id="api-response" class="bg-gray-50 border border-gray-200 p-4 rounded-lg overflow-x-auto text-sm"></pre>
+                </div>
+            </div>
+            <div class="p-6 border-t">
+                <button id="copy-prompt" 
+                        class="w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center justify-center">
+                    <i class="fas fa-copy mr-2"></i>
+                    Copy Prompt to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-tooth text-blue-600"></i>
+                        <span class="font-medium text-gray-700">Dental AI Modifier</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">Powered by OpenAI GPT-4 Vision</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <p>© 2025 Dental AI Tool. For demonstration purposes.</p>
+                    <p class="mt-1">Uploaded images are processed securely and not stored.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:3000'; // Change this to your backend URL
+
+        // State
+        let state = {
+            imageFile: null,
+            selectedOptions: {
+                arch: 'upper',
+                teeth_count: '6',
+                brighten: null,
+                correct_crowding_with_alignment: null,
+                widen_upper_teeth: false,
+                widen_lower_teeth: false,
+                close_spaces_evenly: false,
+                replace_missing_teeth: false,
+                reduce_gummy_smile: false,
+                improve_shape_of_incisal_edges: false,
+                improve_gum_recession: false,
+                correct_underbite: false,
+                correct_overbite: false
+            },
+            results: null
+        };
+
+        // DOM Elements
+        const elements = {
+            uploadArea: document.getElementById('upload-area'),
+            imageInput: document.getElementById('image-input'),
+            imagePreview: document.getElementById('image-preview'),
+            previewImg: document.getElementById('preview-img'),
+            removeImage: document.getElementById('remove-image'),
+            imageSize: document.getElementById('image-size'),
+            generateBtn: document.getElementById('generate-btn'),
+            processingIndicator: document.getElementById('processing-indicator'),
+            progressBar: document.getElementById('progress-bar'),
+            progressText: document.getElementById('progress-text'),
+            resultsSection: document.getElementById('results-section'),
+            resultImage: document.getElementById('result-image'),
+            aiDescription: document.getElementById('ai-description'),
+            downloadBtn: document.getElementById('download-btn'),
+            errorDisplay: document.getElementById('error-display'),
+            errorMessage: document.getElementById('error-message'),
+            optionsSummary: document.getElementById('summary-content'),
+            promptModal: document.getElementById('prompt-modal'),
+            fullPrompt: document.getElementById('full-prompt'),
+            apiResponse: document.getElementById('api-response'),
+            closeModal: document.getElementById('close-modal'),
+            copyPrompt: document.getElementById('copy-prompt'),
+            viewPromptBtn: document.getElementById('view-prompt-btn'),
+            resetBtn: document.getElementById('reset-btn'),
+            healthStatus: document.getElementById('health-status')
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkHealthStatus();
+            setupEventListeners();
+            updateGenerateButton();
+        });
+
+        // Check server health
+        async function checkHealthStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    elements.healthStatus.className = 'mb-8 p-4 bg-green-50 border border-green-200 rounded-lg';
+                    elements.healthStatus.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-green-500 text-lg mr-3"></i>
+                            <div>
+                                <h3 class="font-medium text-green-800">System Ready</h3>
+                                <p class="text-sm text-green-600">
+                                    Connected to server • OpenAI: ${data.openaiConfigured ? 'Available' : 'Not Configured'}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                elements.healthStatus.className = 'mb-8 p-4 bg-red-50 border border-red-200 rounded-lg';
+                elements.healthStatus.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-lg mr-3"></i>
+                        <div>
+                            <h3 class="font-medium text-red-800">Server Connection Failed</h3>
+                            <p class="text-sm text-red-600">Please ensure the backend server is running on ${API_URL}</p>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                elements.healthStatus.classList.remove('hidden');
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // File upload
+            elements.uploadArea.addEventListener('click', () => elements.imageInput.click());
+            elements.imageInput.addEventListener('change', handleImageSelect);
+            elements.removeImage.addEventListener('click', removeImage);
+
+            // Drag and drop
+            elements.uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                elements.uploadArea.classList.add('drag-over');
+            });
+
+            elements.uploadArea.addEventListener('dragleave', () => {
+                elements.uploadArea.classList.remove('drag-over');
+            });
+
+            elements.uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                elements.uploadArea.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) {
+                    handleImageSelect({ target: { files: e.dataTransfer.files } });
+                }
+            });
+
+            // Option buttons
+            document.querySelectorAll('[data-option]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const option = button.dataset.option;
+                    const value = button.dataset.value;
+                    
+                    // Handle boolean-like options (arch, teeth_count, brighten, crowding)
+                    if (['arch', 'teeth_count', 'brighten', 'correct_crowding_with_alignment'].includes(option)) {
+                        // Deselect all siblings
+                        button.parentElement.querySelectorAll('.option-card').forEach(card => {
+                            card.classList.remove('selected');
+                        });
+                        // Select clicked button
+                        button.classList.add('selected');
+                        state.selectedOptions[option] = value;
+                    }
+                    
+                    updateOptionsSummary();
+                    updateGenerateButton();
+                });
+            });
+
+            // Checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    state.selectedOptions[e.target.id] = e.target.checked;
+                    updateOptionsSummary();
+                    updateGenerateButton();
+                });
+            });
+
+            // Generate button
+            elements.generateBtn.addEventListener('click', generateImage);
+
+            // Modal
+            elements.viewPromptBtn.addEventListener('click', showPromptModal);
+            elements.closeModal.addEventListener('click', () => {
+                elements.promptModal.classList.add('hidden');
+            });
+            elements.copyPrompt.addEventListener('click', copyPromptToClipboard);
+
+            // Reset
+            elements.resetBtn.addEventListener('click', resetAll);
+
+            // Close modal on outside click
+            elements.promptModal.addEventListener('click', (e) => {
+                if (e.target === elements.promptModal) {
+                    elements.promptModal.classList.add('hidden');
+                }
+            });
+
+            // Download button
+            elements.downloadBtn.addEventListener('click', downloadResult);
+        }
+
+        // Handle image selection
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file (JPEG, PNG, WebP)');
+                return;
+            }
+
+            if (file.size > 30 * 1024 * 1024) {
+                showError('File size exceeds 30MB limit');
+                return;
+            }
+
+            state.imageFile = file;
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                elements.previewImg.src = e.target.result;
+                elements.imageSize.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+                elements.imagePreview.classList.remove('hidden');
+                updateGenerateButton();
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // Remove selected image
+        function removeImage() {
+            state.imageFile = null;
+            elements.imageInput.value = '';
+            elements.imagePreview.classList.add('hidden');
+            updateGenerateButton();
+        }
+
+        // Update generate button state
+        function updateGenerateButton() {
+            const hasImage = !!state.imageFile;
+            elements.generateBtn.disabled = !hasImage;
+        }
+
+        // Update options summary
+        function updateOptionsSummary() {
+            const summary = [];
+            const options = state.selectedOptions;
+
+            if (options.arch) {
+                summary.push(`<span class="text-blue-600">Arch:</span> ${options.arch}`);
+            }
+            if (options.teeth_count) {
+                summary.push(`<span class="text-blue-600">Teeth:</span> ${options.teeth_count}`);
+            }
+            if (options.brighten) {
+                summary.push(`<span class="text-blue-600">Brighten:</span> ${options.brighten}`);
+            }
+            if (options.correct_crowding_with_alignment) {
+                summary.push(`<span class="text-blue-600">Crowding:</span> ${options.correct_crowding_with_alignment}`);
+            }
+
+            // Boolean options
+            const booleanOptions = [
+                'widen_upper_teeth', 'widen_lower_teeth', 'close_spaces_evenly',
+                'replace_missing_teeth', 'reduce_gummy_smile', 'improve_shape_of_incisal_edges',
+                'improve_gum_recession', 'correct_underbite', 'correct_overbite'
+            ];
+
+            booleanOptions.forEach(opt => {
+                if (options[opt]) {
+                    const label = opt.replace(/_/g, ' ');
+                    summary.push(`<span class="text-green-600">✓</span> ${label}`);
+                }
+            });
+
+            if (summary.length === 0) {
+                elements.optionsSummary.innerHTML = '<p class="text-sm text-gray-500 italic">No options selected yet</p>';
+            } else {
+                elements.optionsSummary.innerHTML = summary.map(item => 
+                    `<p class="text-sm text-gray-700">${item}</p>`
+                ).join('');
+            }
+        }
+
+        // Generate image
+        async function generateImage() {
+            if (!state.imageFile) return;
+
+            // Show processing
+            elements.processingIndicator.classList.remove('hidden');
+            elements.resultsSection.classList.add('hidden');
+            elements.errorDisplay.classList.add('hidden');
+            elements.generateBtn.disabled = true;
+
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 90) clearInterval(progressInterval);
+                elements.progressBar.style.width = `${Math.min(progress, 90)}%`;
+                elements.progressText.textContent = getProgressMessage(progress);
+            }, 300);
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('image', state.imageFile);
+
+            // Add query parameters
+            Object.keys(state.selectedOptions).forEach(key => {
+                if (state.selectedOptions[key] !== null && state.selectedOptions[key] !== false) {
+                    formData.append(key, state.selectedOptions[key]);
+                }
+            });
+
+            try {
+                const response = await fetch(`${API_URL}/create-image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                elements.progressBar.style.width = '100%';
+                elements.progressText.textContent = 'Complete!';
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store results
+                    state.results = data.data;
+                    
+                    // Update UI with results
+                    elements.resultImage.src = data.data.generatedImageUrl;
+                    elements.aiDescription.textContent = data.data.description;
+                    
+                    // Set modal content
+                    elements.fullPrompt.textContent = data.data.prompt;
+                    elements.apiResponse.textContent = JSON.stringify(data.data, null, 2);
+                    
+                    // Show results
+                    setTimeout(() => {
+                        elements.processingIndicator.classList.add('hidden');
+                        elements.resultsSection.classList.remove('hidden');
+                        elements.generateBtn.disabled = false;
+                    }, 500);
+                } else {
+                    throw new Error(data.error || 'Generation failed');
+                }
+            } catch (error) {
+                clearInterval(progressInterval);
+                showError(error.message);
+                elements.generateBtn.disabled = false;
+            }
+        }
+
+        // Get progress message
+        function getProgressMessage(progress) {
+            if (progress < 30) return 'Analyzing image...';
+            if (progress < 60) return 'Processing with AI...';
+            if (progress < 90) return 'Generating modifications...';
+            return 'Finalizing results...';
+        }
+
+        // Show error
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            elements.errorDisplay.classList.remove('hidden');
+            elements.processingIndicator.classList.add('hidden');
+        }
+
+        // Show prompt modal
+        function showPromptModal() {
+            if (state.results) {
+                elements.promptModal.classList.remove('hidden');
+            }
+        }
+
+        // Copy prompt to clipboard
+        async function copyPromptToClipboard() {
+            try {
+                await navigator.clipboard.writeText(state.results.prompt);
+                const originalText = elements.copyPrompt.innerHTML;
+                elements.copyPrompt.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+                setTimeout(() => {
+                    elements.copyPrompt.innerHTML = originalText;
+                }, 2000);
+            } catch (error) {
+                console.error('Failed to copy:', error);
+            }
+        }
+
+        // Download result
+        function downloadResult() {
+            if (!state.results) return;
+            
+            const link = document.createElement('a');
+            link.href = state.results.generatedImageUrl;
+            link.download = 'modified-dental-image.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Reset all
+        function resetAll() {
+            // Reset state
+            state = {
+                imageFile: null,
+                selectedOptions: {
+                    arch: 'upper',
+                    teeth_count: '6',
+                    brighten: null,
+                    correct_crowding_with_alignment: null,
+                    widen_upper_teeth: false,
+                    widen_lower_teeth: false,
+                    close_spaces_evenly: false,
+                    replace_missing_teeth: false,
+                    reduce_gummy_smile: false,
+                    improve_shape_of_incisal_edges: false,
+                    improve_gum_recession: false,
+                    correct_underbite: false,
+                    correct_overbite: false
+                },
+                results: null
+            };
+
+            // Reset UI
+            elements.imageInput.value = '';
+            elements.imagePreview.classList.add('hidden');
+            elements.resultsSection.classList.add('hidden');
+            elements.errorDisplay.classList.add('hidden');
+            elements.processingIndicator.classList.add('hidden');
+            
+            // Reset checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            // Reset option buttons
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Set defaults
+            document.querySelector('[data-option="arch"][data-value="upper"]').classList.add('selected');
+            document.querySelector('[data-option="teeth_count"][data-value="6"]').classList.add('selected');
+            
+            updateOptionsSummary();
+            updateGenerateButton();
+            
+            // Show success message
+            showTemporaryMessage('All settings have been reset');
+        }
+
+        // Show temporary message
+        function showTemporaryMessage(message) {
+            const msg = document.createElement('div');
+            msg.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            msg.textContent = message;
+            document.body.appendChild(msg);
+            
+            setTimeout(() => {
+                msg.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
