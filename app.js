@@ -8,7 +8,6 @@ const fs = require('fs');
 const imageController = require('./controllers/imageController');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS || ['http://localhost:5173', 'http://localhost:3000']; //allowed origins from env
@@ -117,6 +116,8 @@ app.post(
 
 // Error Handler Middleware
 app.use((error, req, res, next) => {
+  console.log("error",error);
+  
   console.error('Error:', error);
 
   // CORS errors
@@ -185,5 +186,4 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-module.exports=app
+module.exports = app
