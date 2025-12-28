@@ -33,6 +33,9 @@ class PromptBuilder {
 
     // Construct final prompt
     const prompt = this.constructPrompt(arch, teethCount);
+    console.log("params", this.params);
+    console.log("mod", this.modifications);
+
     
     return prompt;
   }
