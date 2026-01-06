@@ -28,7 +28,9 @@ const corsOptions = {
   credentials: true
 };
 
-app.use(cors(corsOptions));
+  
+                                                                                                
+app.use(cors(corsOptions)); 
 app.use(express.static(path.join(__dirname, 'public')));
 // Multer Configuration
 const upload = multer({
@@ -185,5 +187,7 @@ app.use((req, res) => {
     code: 'NOT_FOUND'
   });
 });
+
+
 
 module.exports = app
