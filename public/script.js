@@ -21,7 +21,8 @@ let state = {
   },
   results: null,
 };
-
+                                                                            
+                                                                           
 // DOM Elements
 const elements = {
   uploadArea: document.getElementById("upload-area"),
@@ -34,13 +35,13 @@ const elements = {
   processingIndicator: document.getElementById("processing-indicator"),
   progressBar: document.getElementById("progress-bar"),
   progressText: document.getElementById("progress-text"),
-  resultsSection: document.getElementById("results-section"),
+  resultsSection: document.getElementById("results-section"),   
   resultImage: document.getElementById("result-image"),
-  aiDescription: document.getElementById("ai-description"),
+  aiDescription: document.getElementById("ai-description"),          
   downloadBtn: document.getElementById("download-btn"),
   errorDisplay: document.getElementById("error-display"),
   errorMessage: document.getElementById("error-message"),
-  optionsSummary: document.getElementById("summary-content"),
+  optionsSummary: document.getElementById("summary-content"),      
   promptModal: document.getElementById("prompt-modal"),
   fullPrompt: document.getElementById("full-prompt"),
   apiResponse: document.getElementById("api-response"),
