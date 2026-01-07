@@ -77,19 +77,19 @@ class ImageController {
   async callOpenAI(prompt, imageDataUrl) {
     try {
       // Option 1: Use GPT-4 Vision to analyze and describe modifications
-      // const visionResponse = await this.openai.chat.completions.create({
-      //   model: 'gpt-4o',
-      //   messages: [
-      //     {
-      //       role: 'user',
-      //       content: [
-      //         { type: 'text', text: prompt },
-      //         { type: 'image_url', image_url: { url: imageDataUrl } }
-      //       ]
-      //     }
-      //   ],
-      //   max_tokens: 500
-      // });
+      const visionResponse = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: imageDataUrl } }
+            ]
+          }
+        ],
+        max_tokens: 500
+      });
 
       // const description = visionResponse.choices[0].message.content;
       const description = "testing local"
