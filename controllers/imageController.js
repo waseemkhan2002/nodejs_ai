@@ -85,7 +85,7 @@ class ImageController {
       console.log("image file", imageFile);
       
       const response = await this.openai.images.edit({
-        model: "gpt-image-1.5",
+        model: "gpt-image-1",
         prompt: prompt,
         size: "1024x1024",
         image: imageFile, // <— main input image
